@@ -1,4 +1,5 @@
 mod utils;
+extern crate js_sys;
 
 use wasm_bindgen::prelude::*;
 
@@ -83,19 +84,36 @@ impl Universe {
         self.cells = next;
     }
     
-    pub fn new() -> Universe {
+    pub fn new() -> Universe {  // js_sys::Math::random
         let width = 128;
         let height = 128;
 
         let cells = (0..width * height)
             .map(|i| {
-                if i % 2 == 0 || i % 7 == 0 {
+
+                // let x:f64 = 2.0 * ( (i % (width /4)) as f64) / ((width /4) as f64) - 1.0;
+                // let y:f64 = 2.0 * ( (i % (width /4)) as f64) / ((width /4) as f64) - 1.0;
+                // let z:f64 = (x * y + 1.0) / 2.0;
+                // let w:f64 = js_sys::Math::sin(z *  std::f64::consts::PI) / 2.0 + 0.5;
+                if js_sys::Math::random() < 0.5 {
                     Cell::Alive
                 } else {
                     Cell::Dead
                 }
             })
             .collect();
+
+
+
+        // let cells = (0..width * height)
+        //     .map(|i| {
+        //         if i % 2 == 0 || i % 7 == 0 {
+        //             Cell::Alive
+        //         } else {
+        //             Cell::Dead
+        //         }
+        //     })
+        //     .collect();
 
         Universe {
             width,
