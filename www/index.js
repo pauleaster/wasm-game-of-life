@@ -1,9 +1,11 @@
 import { Universe, Cell } from "wasm-game-of-life";
 
 const CELL_SIZE = 5; // px
-const GRID_COLOR = "#000000FF";
-const DEAD_COLOR = "#000000";
+const GRID_COLOR = "#FF0000";
+const DEAD_COLOR = "#00FF00";
 const ALIVE_COLOR = "#FF8800";
+const ALIVE = 1;
+const DEAD = 0;
 
 // Construct the universe, and get its width and height.
 const universe = Universe.new();
@@ -57,7 +59,16 @@ const getIndex = (row, column) => {
 
 const drawCells = () => {
   const cellsPtr = universe.cells();
-  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height);
+  const cells = new Uint8Array(memory.buffer, cellsPtr, width * height + 3);
+
+  
+
+  // c2 = cells[width * height]
+  // c1 = cells[width * height+1]
+  // c0 = cells[width * height+2]
+  // alive = (c2 << 16) + (c1 << 8) + c0
+  alive = 0xFF0000
+
 
   ctx.beginPath();
 
@@ -65,9 +76,11 @@ const drawCells = () => {
     for (let col = 0; col < width; col++) {
       const idx = getIndex(row, col);
 
-      ctx.fillStyle = cells[idx] === Cell.Dead
-        ? DEAD_COLOR
-        : ALIVE_COLOR;
+
+      // ctx.fillStyle = ALIVE_COLOR // alive
+      ctx.fillStyle = cells[idx] === DEAD
+        ? DEAD_COLOR // universe.bg_colour() //DEAD_COLOR
+        : ALIVE_COLOR;// ALIVE_COLOR; //universe.fg_colour(); //ALIVE_COLOR;
 
       ctx.fillRect(
         col * (CELL_SIZE + 1) + 1,
