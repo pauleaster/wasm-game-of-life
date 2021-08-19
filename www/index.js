@@ -2,7 +2,7 @@ import { Universe, Cell } from "wasm-game-of-life";
 
 const CELL_SIZE = 5; // px
 const GRID_COLOR = "#FF0000";
-const DEAD_COLOR = "#00FF00";
+const DEAD_COLOR = "#000000";
 const ALIVE_COLOR = "#FF8800";
 const ALIVE = 1;
 const DEAD = 0;
@@ -31,7 +31,13 @@ const renderLoop = () => {
 
 const drawGrid = () => {
     ctx.beginPath();
-    ctx.strokeStyle = GRID_COLOR;
+  c2 = cells[width * height]
+  c1 = cells[width * height+1]
+  c0 = cells[width * height+2]
+  alive = ((c2 << 16) + (c1 << 8) + c0).toString(16)
+
+
+    ctx.strokeStyle = alive // GRID_COLOR;
   
     // Vertical lines.
     for (let i = 0; i <= width; i++) {
@@ -63,10 +69,7 @@ const drawCells = () => {
 
   
 
-  // c2 = cells[width * height]
-  // c1 = cells[width * height+1]
-  // c0 = cells[width * height+2]
-  // alive = (c2 << 16) + (c1 << 8) + c0
+
   alive = 0xFF0000
 
 
