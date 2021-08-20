@@ -80,6 +80,7 @@ const getIndex = (row, column) => {
 const drawCells = () => {
   const cellsPtr = universe.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, width * height + 3);
+  let rgb_str = 'rgb(' + 255 + ',' + 255 + ',' + 255 + ')';
 
   
   
@@ -100,6 +101,8 @@ const drawCells = () => {
   // + cells[width * height + 2].toString(16) , 10, 50);
 
   // console.log('rgb(' + cells[width * height] + ',' + cells[width * height + 1] + ',' + cells[width * height + 2] + ')')
+  rgb_str = 'rgb(' + cells[width * height] + ',' + cells[width * height + 1] + ',' + cells[width * height + 2] + ')';
+  // console.log(rgb_str);
 
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
@@ -109,7 +112,7 @@ const drawCells = () => {
       // ctx.fillStyle = ALIVE_COLOR // alive
       ctx.fillStyle = cells[idx] === DEAD
         ? DEAD_COLOR // universe.bg_colour() //DEAD_COLOR
-        :  'rgb(' + cells[width * height] + ',' + cells[width * height + 1] + ',' + cells[width * height + 2] + ')'; //universe.fg_colour(); //ALIVE_COLOR;
+        :  rgb_str;  // 'rgb(' + cells[width * height] + ',' + cells[width * height + 1] + ',' + cells[width * height + 2] + ')'; //universe.fg_colour(); //ALIVE_COLOR;
 
       ctx.fillRect(
         col * (CELL_SIZE + 1) + 1,
