@@ -1,4 +1,5 @@
 mod utils;
+extern crate web_sys;
 
 use wasm_bindgen::prelude::*;
 
@@ -24,9 +25,12 @@ pub struct Universe {
     width: u32,
     height: u32,
     cells: Vec<u8>,
-    fg_colour: u32,
+    fg_colour: i32,
     bg_colour: u32,
     colour_status: u32,
+    fg_red: u8,
+    fg_green: u8,
+    fg_blue: u8
 }
 
 const ALIVE: u8 = 1;
@@ -56,38 +60,40 @@ impl Universe {
 
     fn increment_colour(& mut self) {
 
+        const DELTA:i32 = 5;
+
         match self.colour_status {
-            0 => { self.fg_colour = self.fg_colour + 0x000100;
+            0 => { self.fg_colour = self.fg_colour + 0x000100 * DELTA;
                 if  self.fg_colour >= 0xFFFF00 {
                     self.colour_status = 1;
                     self.fg_colour = 0xFFFF00;
                     }
                 },
-            1 => { self.fg_colour = self.fg_colour - 0x010000;
+            1 => { self.fg_colour = self.fg_colour - 0x010000 * DELTA;
                 if  self.fg_colour <= 0x00FF00 {
                     self.colour_status = 2;
                     self.fg_colour = 0x00FF00;
                     }
                 },
-            2 => { self.fg_colour = self.fg_colour + 0x000001;
+            2 => { self.fg_colour = self.fg_colour + 0x000001 * DELTA;
                 if  self.fg_colour >= 0x00FFFF {
                     self.colour_status = 3;
                     self.fg_colour = 0x00FFFF;
                     }
                 },
-            3 => { self.fg_colour = self.fg_colour - 0x000100;
+            3 => { self.fg_colour = self.fg_colour - 0x000100 * DELTA;
                 if  self.fg_colour <= 0x0000FF {
                     self.colour_status = 4;
                     self.fg_colour = 0x0000FF;
                     }
                 },
-            4 => { self.fg_colour = self.fg_colour + 0x010000;
+            4 => { self.fg_colour = self.fg_colour + 0x010000 * DELTA;
                 if  self.fg_colour >= 0xFF00FF {
                     self.colour_status = 5;
                     self.fg_colour = 0xFF00FF;
                     }
                 },
-            5 => { self.fg_colour = self.fg_colour - 0x000001;
+            5 => { self.fg_colour = self.fg_colour - 0x000001 * DELTA;
                 if  self.fg_colour <= 0xFF0000 {
                     self.colour_status = 0;
                     self.fg_colour = 0xFF0000;
@@ -98,6 +104,9 @@ impl Universe {
                 self.colour_status = 0;
             }
         }
+        self.fg_red = ((self.fg_colour >> 16) & 0xFF) as u8;
+        self.fg_green = ((self.fg_colour >> 8) & 0xFF) as u8;
+        self.fg_blue = (self.fg_colour  & 0xFF) as u8;
 
     }
 }
@@ -105,6 +114,8 @@ impl Universe {
 /// Public methods, exported to JavaScript.
 #[wasm_bindgen]
 impl Universe {
+
+    
 
     pub fn tick(&mut self) {
         let mut next = self.cells.clone();
@@ -139,19 +150,23 @@ impl Universe {
 
         self.cells = next;
         self.increment_colour();
-        self.cells[(self.height  * self.width) as usize] =  ((self.fg_colour >> 16) | 0x0FF) as u8;
-        self.cells[(self.height  * self.width+1) as usize] =  ((self.fg_colour >> 8) | 0x0FF) as u8;
-        self.cells[(self.height  * self.width+2) as usize] =  (self.fg_colour  | 0x0FF) as u8
-        
+        self.cells[(self.height  * self.width) as usize] =  self.fg_red;
+        self.cells[(self.height  * self.width+1) as usize] =  self.fg_green;
+        self.cells[(self.height  * self.width+2) as usize] =  self.fg_blue;
+
 
     }
     
     pub fn new() -> Universe {
-        let width = 128;
+        let width = 256;
         let height = 128;
-        let fg_colour:u32 = 0xFF0000;
+        let fg_colour:i32 = 0xFF0000;
         let bg_colour: u32 = 0x00FF00;
         let colour_status = 0;
+        let fg_red: u8 = 0xFF;
+        let fg_green: u8 = 0;
+        let fg_blue: u8 = 0;
+
 
 
         let cells: Vec<u8> = (0..width * height + 3)
@@ -163,14 +178,16 @@ impl Universe {
                         DEAD
                     }
                 } else if i == width * height {
-                    ((fg_colour >> 16) | 0x0FF) as u8
+                    fg_red
                 } else if i == width * height + 1 {
-                    ((fg_colour >> 8) | 0x0FF) as u8
+                    fg_green
                 } else {
-                    (fg_colour  | 0x0FF) as u8
+                    fg_blue
                 }
             })
             .collect();
+
+        // web_sys::console::log_1(&"Hello, world!".into());
 
 
         Universe {
@@ -180,8 +197,13 @@ impl Universe {
             fg_colour,
             bg_colour,
             colour_status,
+            fg_red,
+            fg_green,
+            fg_blue,
 
         }
+
+        
     }
 
     // pub fn render(&self) -> String {
@@ -200,7 +222,7 @@ impl Universe {
         self.cells.as_ptr()
     }
     
-    pub fn fg_colour(&self) -> u32 {
+    pub fn fg_colour(&self) -> i32 {
         self.fg_colour
     }
 
