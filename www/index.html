@@ -19,6 +19,9 @@
   </head>
   <body>
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <button id="play-pause"></button>
+    <input type="range" min="0" max="10" value="5" class="myslider" id="tick_count" oninput="this.nextElementSibling.value = this.value">
+    <div id="fps"></div>
     <canvas id="game-of-life-canvas"></canvas>
     <script src="./bootstrap.js"></script>
   </body>
