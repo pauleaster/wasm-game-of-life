@@ -1,25 +1,26 @@
 mod utils;
-extern crate web_sys;
+extern crate js_sys;
+// extern crate web_sys;
 
 
-use web_sys::console;
+// use web_sys::console;
 
-pub struct Timer<'a> {
-    name: &'a str,
-}
+// pub struct Timer<'a> {
+//     name: &'a str,
+// }
 
-impl<'a> Timer<'a> {
-    pub fn new(name: &'a str) -> Timer<'a> {
-        console::time_with_label(name);
-        Timer { name }
-    }
-}
+// impl<'a> Timer<'a> {
+//     pub fn new(name: &'a str) -> Timer<'a> {
+//         console::time_with_label(name);
+//         Timer { name }
+//     }
+// }
 
-impl<'a> Drop for Timer<'a> {
-    fn drop(&mut self) {
-        console::time_end_with_label(self.name);
-    }
-}
+// impl<'a> Drop for Timer<'a> {
+//     fn drop(&mut self) {
+//         console::time_end_with_label(self.name);
+//     }
+// }
 
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
@@ -57,17 +58,19 @@ const SIGNS : [i32;6] = [1,-1,1,-1,1,-1];
 const NEXT_COLOUR : [i32;6] = [0xFFFF00,0x00FF00,0x00FFFF,0x0000FF,0xFF00FF,0xFF0000];
 
 
-// #[wasm_bindgen]  // Commented out for bench tes
+#[wasm_bindgen]  // Comment out for bench test
 pub struct Universe {
-    width: u32,
-    height: u32,
+    width_bits: usize,
+    height_bits: usize,
     cells: Vec<u8>,
     fg_colour: i32,
     bg_colour: u32,
     colour_status: usize,
     fg_red: u8,
     fg_green: u8,
-    fg_blue: u8
+    fg_blue: u8,
+    width: u32,
+    height: u32,
 }
 
 const ALIVE: u8 = 1;
@@ -86,8 +89,8 @@ impl Universe {
                     continue;
                 }
 
-                let neighbor_row = (row + delta_row) % self.height;
-                let neighbor_col = (column + delta_col) % self.width;
+                let neighbor_row = (row + delta_row) & (self.height - 1);
+                let neighbor_col = (column + delta_col) & (self.width - 1);
                 let idx = self.get_index(neighbor_row, neighbor_col);
                 count += self.cells[idx] as u8;
             }
@@ -129,23 +132,23 @@ impl Universe {
 }
 
 /// Public methods, exported to JavaScript.
-// #[wasm_bindgen]  // Commented out for bench testt
+#[wasm_bindgen]  // Comment out for bench testt
 impl Universe {
 
     
         
 
     pub fn tick(&mut self) {
-        let _timer = Timer::new("Universe::tick");
+        // let _timer = Timer::new("Universe::tick");
 
         let mut next = {
-            let _timer = Timer::new("allocate next cells");
+        //     let _timer = Timer::new("allocate next cells");
             self.cells.clone()
         };
 
 
 
-        let _timer = Timer::new("new generation");
+        // let _timer = Timer::new("new generation");
         for row in 0..self.height {
             for col in 0..self.width {
                 let idx = self.get_index(row, col);
@@ -177,9 +180,9 @@ impl Universe {
                 next[idx] = next_cell;
             }
         }
-        let _timer = Timer::new("free old cells");
+        // let _timer = Timer::new("free old cells");
         self.cells = next;
-        let _timer = Timer::new("colour change");
+        // let _timer = Timer::new("colour change");
         self.increment_colour();
         self.cells[(self.height  * self.width) as usize] =  self.fg_red;
         self.cells[(self.height  * self.width+1) as usize] =  self.fg_green;
@@ -192,43 +195,40 @@ impl Universe {
     pub fn new() -> Universe {
         utils::set_panic_hook();
 
-        let width = 128;
-        let height = 128;
+        let width_bits = 8;
+        let height_bits = 7;
         let fg_colour:i32 = 0xFF0000;
         let bg_colour: u32 = 0x00FF00;
         let colour_status = 0;
         let fg_red: u8 = 0xFF;
         let fg_green: u8 = 0;
         let fg_blue: u8 = 0;
+        let width = 1 << width_bits;
+        let height = 1 << height_bits;
 
+        let cells: Vec<u8> = Universe::init_cells(width, height, fg_red, fg_green, fg_blue);
 
-
-        let cells: Vec<u8> = (0..width * height + 3)
-            .map(|i| {
-                if i < width * height {
-                    if i % 2 == 0 || i % 7 == 0 {
-                        ALIVE
-                    } else {
-                        DEAD
-                    }
-                } else if i == width * height {
-                    fg_red
-                } else if i == width * height + 1 {
-                    fg_green
-                } else {
-                    fg_blue
-                }
-            })
-            .collect();
+        // let cells: Vec<u8> = (0..width * height + 3)
+        //     .map(|i| {
+        //         if i < width * height {
+        //             if i % 2 == 0 || i % 7 == 0 {
+        //                 ALIVE
+        //             } else {
+        //                 DEAD
+        //             }
+        //         } else if i == width * height {
+        //             fg_red
+        //         } else if i == width * height + 1 {
+        //             fg_green
+        //         } else {
+        //             fg_blue
+        //         }
+        //     })
+        //     .collect();
         
-
-
-        
-
-
         Universe {
-            width,
-            height,
+            width_bits,
+            height_bits,
             cells,
             fg_colour,
             bg_colour,
@@ -236,6 +236,8 @@ impl Universe {
             fg_red,
             fg_green,
             fg_blue,
+            width,
+            height,
 
         }
 
@@ -286,6 +288,60 @@ impl Universe {
         let idx = self.get_index(row, col);
         self.cells[idx] = 1 & !self.cells[idx];
     }
+
+    pub fn clear(&mut self) {
+
+
+        for row in 0..self.height {
+            for col in 0..self.width {
+                let idx = self.get_index(row, col);
+                self.cells[idx] = DEAD;
+            }
+        }
+    }
+
+    fn init_cells(width:u32, height:u32, fg_red:u8, fg_green:u8, fg_blue:u8) -> Vec<u8>{
+
+        let cells: Vec<u8> = (0..width * height + 3)
+            .map(|i| {
+                if i < width * height {
+                    if i % 2 == 0 || i % 7 == 0 {
+                        ALIVE
+                    } else {
+                        DEAD
+                    }
+                } else if i == width * height {
+                    fg_red
+                } else if i == width * height + 1 {
+                    fg_green
+                } else {
+                    fg_blue
+                }
+            })
+            .collect();
+        cells
+    }
+
+    pub fn initial_cells(& mut self) {
+
+        self.cells = Universe::init_cells(self.width, self.height, self.fg_red, self.fg_green, self.fg_blue);
+    }
+
+    pub fn random(&mut self) {
+
+
+        for row in 0..self.height {
+            for col in 0..self.width {
+                let idx = self.get_index(row, col);
+                if js_sys::Math::random() < 0.5 {
+                    self.cells[idx] = ALIVE;
+                } else {
+                self.cells[idx] = DEAD;
+                }
+            }
+        }
+    }
+
 
 }
 
